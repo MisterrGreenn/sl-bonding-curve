@@ -673,8 +673,10 @@ version = "0.1.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "anyhow",
  "solana-program",
  "solana-program-test",
+ "solana-sdk",
 ]
 
 [[package]]

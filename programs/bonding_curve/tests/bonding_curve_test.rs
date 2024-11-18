@@ -19,8 +19,8 @@ async fn test_initialize() {
     let mut context = validator.start_with_context().await;
 
     let init_ix = Instruction {
-        program_id: anchor_counter::ID,
-        accounts: anchor_counter::accounts::Initialize {
+        program_id: bonding_curve::ID,
+        accounts: bonding_curve::accounts::InitializeCurveConfiguration {
             counter: counter_pda,
             user: user.pubkey(),
             system_program: system_program::ID,
