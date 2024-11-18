@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use anchor_lang::{
     prelude::Pubkey,
     solana_program::{self},
@@ -21,12 +23,16 @@ async fn test_initialize() {
     let init_ix = Instruction {
         program_id: bonding_curve::ID,
         accounts: bonding_curve::accounts::InitializeCurveConfiguration {
-            counter: counter_pda,
-            user: user.pubkey(),
+            dex_configuration_account: Pubkey::from_str(
+                "B6DdYgjnem3Ehj4yd3SoxSgjEcHww5RYQJwmvJd2rwyf",
+            )
+            .unwrap(),
+            admin: user.pubkey(),
             system_program: system_program::ID,
+            rent: counter_pda,
         }
         .to_account_metas(None),
-        data: anchor_counter::instruction::Initialize {}.data(),
+        data: bonding_curve::instruction::Initialize { fee: 0f64 }.data(),
     };
 
     let init_tx = Transaction::new_signed_with_payer(
