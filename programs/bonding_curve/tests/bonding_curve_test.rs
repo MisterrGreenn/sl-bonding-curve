@@ -10,7 +10,12 @@ use bonding_curve::state::CurveConfiguration;
 use solana_program::instruction::Instruction;
 use solana_program_test::{tokio, ProgramTest, ProgramTestContext};
 use solana_sdk::{
-    account::Account, signature::Keypair, signer::Signer, sysvar::Sysvar, transaction::Transaction,
+    account::Account,
+    rent::Rent,
+    signature::Keypair,
+    signer::Signer,
+    sysvar::{Sysvar, SysvarId},
+    transaction::Transaction,
 };
 
 #[tokio::test]
@@ -27,8 +32,8 @@ async fn test_initialize() {
         accounts: bonding_curve::accounts::InitializeCurveConfiguration {
             dex_configuration_account: bonding_curve_pda,
             admin: user.pubkey(),
+            rent: Rent::id(),
             system_program: system_program::ID,
-            rent: user.pubkey(),
         }
         .to_account_metas(None),
         data: bonding_curve::instruction::Initialize { fee: 0f64 }.data(),

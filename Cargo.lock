@@ -194,6 +194,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "anchor-counter"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anyhow",
+ "solana-program",
+ "solana-program-test",
+ "solana-sdk",
+]
+
+[[package]]
 name = "anchor-derive-accounts"
 version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -668,7 +679,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8d696c370c750c948ada61c69a0ee2cbbb9c50b1019ddb86d9317157a99c2cae"
 
 [[package]]
-name = "bonding_curve"
+name = "bonding-curve"
 version = "0.1.0"
 dependencies = [
  "anchor-lang",

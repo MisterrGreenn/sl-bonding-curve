@@ -1,12 +1,12 @@
 [package]
-name = "bonding-curve"
+name = "anchor-counter"
 version = "0.1.0"
 description = "Created with Anchor"
 edition = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "bonding_curve"
+name = "anchor_counter"
 
 [features]
 no-entrypoint = []
@@ -16,11 +16,10 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = { version = "0.29.0", features = ["init-if-needed"] }
-anchor-spl = "0.29.0"
-solana-program = "1.17"
+anchor-lang = "~0.29"
+solana-program = "~1.17"
 
 [dev-dependencies]
-solana-program-test = "1.17"
-solana-sdk = "1.17"
+solana-program-test = "~1.17"
+solana-sdk = "~1.17"
 anyhow = "1.0.44"
