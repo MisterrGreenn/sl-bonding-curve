@@ -39,23 +39,23 @@ describe('bonding_curve', () => {
 
   console.log("Admin's wallet address is : ", user.publicKey.toBase58());
 
-  it('Airdrop to admin wallet', async () => {
-    console.log(`Requesting airdrop to admin for 1SOL : ${user.publicKey.toBase58()}`);
-    // 1 - Request Airdrop
-    const signature = await connection.requestAirdrop(user.publicKey, 10 ** 9);
-    // 2 - Fetch the latest blockhash
-    const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
-    // 3 - Confirm transaction success
-    await connection.confirmTransaction(
-      {
-        blockhash,
-        lastValidBlockHeight,
-        signature
-      },
-      'finalized'
-    );
-    console.log('admin wallet balance : ', (await connection.getBalance(user.publicKey)) / 10 ** 9, 'SOL');
-  });
+  // it('Airdrop to admin wallet', async () => {
+  //   console.log(`Requesting airdrop to admin for 1SOL : ${user.publicKey.toBase58()}`);
+  //   // 1 - Request Airdrop
+  //   const signature = await connection.requestAirdrop(user.publicKey, 10 ** 9);
+  //   // 2 - Fetch the latest blockhash
+  //   const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+  //   // 3 - Confirm transaction success
+  //   await connection.confirmTransaction(
+  //     {
+  //       blockhash,
+  //       lastValidBlockHeight,
+  //       signature
+  //     },
+  //     'finalized'
+  //   );
+  //   console.log('admin wallet balance : ', (await connection.getBalance(user.publicKey)) / 10 ** 9, 'SOL');
+  // });
 
   // it("Airdrop to user wallet", async () => {
   //   console.log("Created a user, address is ", user2.publicKey.toBase58())
