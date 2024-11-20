@@ -4,15 +4,15 @@
 seeds = true
 skip-lint = false
 
-[programs.devnet]
+[programs.localnet]
+anchor_counter = "9dFwos7KxyxUu6tenwAoAyDSCr4fMEZ1eTbF7watxACZ"
 bonding_curve = "2RvPPes11jGU8CDZDPLZdKRGZEtWye5ZTJ4PZCKJuUoZ"
-anchor_counter = "4bQnJG1f7Vcp5bDRqRmJmUB92MJ39FvCtWfHx5QLXfqn"
 
 [registry]
-url = "https://devnet.helius-rpc.com/?api-key=39d83ffa-585c-4f90-8636-2f6795db4cb3"
+url = "http://127.0.0.1:8899"
 
 [provider]
-cluster = "Devnet"
+cluster = "Localnet"
 wallet = "/Users/phamtu/.config/solana/id.json"
 
 [scripts]
