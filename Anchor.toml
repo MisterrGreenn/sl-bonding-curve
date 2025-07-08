@@ -1,18 +1,20 @@
 [toolchain]
+anchor_version = "0.31.1"
 
 [features]
-seeds = true
+resolution = true
 skip-lint = false
 
 [programs.localnet]
 anchor_counter = "9dFwos7KxyxUu6tenwAoAyDSCr4fMEZ1eTbF7watxACZ"
 bonding_curve = "2RvPPes11jGU8CDZDPLZdKRGZEtWye5ZTJ4PZCKJuUoZ"
+my-program = "BManGV3uwhHypt6FDZsHcdQHDsUZDLCYSfCEQ1j81xFu"
 
 [registry]
 url = "http://127.0.0.1:8899"
 
 [provider]
-cluster = "Localnet"
+cluster = "localnet"
 wallet = "/Users/phamtu/.config/solana/id.json"
 
 [scripts]
