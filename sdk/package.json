@@ -1,0 +1,35 @@
+{
+  "name": "@sl-bonding-curve/sdk",
+  "version": "1.0.0",
+  "description": "TypeScript SDK for the Solana Bonding Curve Program",
+  "main": "bonding-curve-sdk.ts",
+  "types": "bonding-curve-sdk.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest"
+  },
+  "keywords": [
+    "solana",
+    "bonding-curve",
+    "defi",
+    "blockchain"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.6",
+    "@solana/spl-token": "^0.3.9"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.10"
+  },
+  "peerDependencies": {
+    "@coral-xyz/anchor": "^0.29.0",
+    "@solana/web3.js": "^1.87.6",
+    "@solana/spl-token": "^0.3.9"
+  }
+} 
