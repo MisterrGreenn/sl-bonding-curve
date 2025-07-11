@@ -6,3 +6,10 @@ target
 node_modules
 test-ledger
 .yarn
+
+# Security - exclude keypair files
+*.json
+!tsconfig.json
+!package.json
+!package-lock.json
+!Anchor.toml

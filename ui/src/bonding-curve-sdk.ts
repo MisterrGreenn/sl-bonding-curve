@@ -27,6 +27,22 @@ export const INITIAL_LAMPORTS_FOR_POOL = 10_000_000; // 0.01 SOL
 export const TOKEN_SELL_LIMIT_PERCENT = 8000; // 80%
 export const PROPORTION = 1280;
 
+// Linear bonding curve constants: Price = a × TokensSold + b
+export const LINEAR_SLOPE = 0.000001; // 'a' - price increase per token sold (in SOL)
+export const LINEAR_INTERCEPT = 0.00001; // 'b' - initial price (in SOL)
+
+// Platform fee configuration
+export const PLATFORM_FEE_PERCENT = 50; // 50% platform fee (for testing)
+export const PLATFORM_FEE_WALLET = new PublicKey('EkZvFSSYzABfn32sydHGWbaMZWhm5JgjYcDhdmUWeGV6'); // Platform fee wallet
+
+/**
+ * Platform Fee Implementation:
+ * - Buy transactions: Fee is deducted from the SOL amount before purchasing tokens
+ * - Sell transactions: Fee is deducted from the SOL received after selling tokens
+ * - Fee is transferred to the PLATFORM_FEE_WALLET address
+ * - Use the helper functions to calculate net amounts and fees for UI display
+ */
+
 // Type definitions
 export interface CurveConfiguration {
   fees: number;
@@ -314,12 +330,31 @@ export class BondingCurveSDK {
       this.wallet.publicKey
     );
 
+    // Calculate platform fee
+    const platformFee = amountInLamports.muln(PLATFORM_FEE_PERCENT).divn(100);
+    const amountAfterFee = amountInLamports.sub(platformFee);
+
+    console.log(`Buy transaction: Total SOL: ${amountInLamports.toString()}, Platform fee: ${platformFee.toString()}, Amount for purchase: ${amountAfterFee.toString()}`);
+
     const data = Buffer.concat([
       INSTRUCTION_DISCRIMINATORS.buy,
-      amountInLamports.toArrayLike(Buffer, 'le', 8),
+      amountAfterFee.toArrayLike(Buffer, 'le', 8),
     ]);
 
-    const ix = new TransactionInstruction({
+    const tx = new Transaction();
+
+    // Add platform fee transfer instruction if fee > 0
+    if (platformFee.gt(new BN(0))) {
+      const platformFeeIx = SystemProgram.transfer({
+        fromPubkey: this.wallet.publicKey,
+        toPubkey: PLATFORM_FEE_WALLET,
+        lamports: platformFee.toNumber(),
+      });
+      tx.add(platformFeeIx);
+    }
+
+    // Add main buy instruction
+    const buyIx = new TransactionInstruction({
       programId: PROGRAM_ID,
       keys: [
         { pubkey: curveConfigPDA, isSigner: false, isWritable: true },
@@ -337,7 +372,8 @@ export class BondingCurveSDK {
       data,
     });
 
-    const tx = new Transaction().add(ix);
+    tx.add(buyIx);
+
     const signature = await this.wallet.sendTransaction(tx, this.connection);
     await this.connection.confirmTransaction(signature);
     
@@ -361,13 +397,28 @@ export class BondingCurveSDK {
       this.wallet.publicKey
     );
 
+    // Get pool info to calculate expected SOL return
+    const pool = await this.getPool(tokenMint);
+    if (!pool) {
+      throw new Error('Pool not found');
+    }
+
+    // Calculate expected SOL return and platform fee
+    const expectedSolReturn = this.calculateSellReturn(pool, amountTokens);
+    const platformFee = expectedSolReturn.muln(PLATFORM_FEE_PERCENT).divn(100);
+
+    console.log(`Sell transaction: Expected SOL return: ${expectedSolReturn.toString()}, Platform fee: ${platformFee.toString()}`);
+
     const data = Buffer.concat([
       INSTRUCTION_DISCRIMINATORS.sell,
       amountTokens.toArrayLike(Buffer, 'le', 8),
       Buffer.from([bump]),
     ]);
 
-    const ix = new TransactionInstruction({
+    const tx = new Transaction();
+
+    // Add main sell instruction
+    const sellIx = new TransactionInstruction({
       programId: PROGRAM_ID,
       keys: [
         { pubkey: curveConfigPDA, isSigner: false, isWritable: true },
@@ -385,7 +436,19 @@ export class BondingCurveSDK {
       data,
     });
 
-    const tx = new Transaction().add(ix);
+    tx.add(sellIx);
+
+    // Add platform fee transfer instruction if fee > 0
+    // Note: This will be executed after the sell, so user receives SOL first, then fee is deducted
+    if (platformFee.gt(new BN(0))) {
+      const platformFeeIx = SystemProgram.transfer({
+        fromPubkey: this.wallet.publicKey,
+        toPubkey: PLATFORM_FEE_WALLET,
+        lamports: platformFee.toNumber(),
+      });
+      tx.add(platformFeeIx);
+    }
+
     const signature = await this.wallet.sendTransaction(tx, this.connection);
     await this.connection.confirmTransaction(signature);
     
@@ -443,34 +506,76 @@ export class BondingCurveSDK {
 
   // Calculate buy price (amount of SOL needed to buy X tokens)
   calculateBuyPrice(pool: LiquidityPool, tokenAmount: BN): BN {
-    const boughtAmount = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e6 / 1e9;
+    const tokensSold = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e9;
     const tokenAmountFloat = tokenAmount.toNumber() / 1e9;
     
-    const newBoughtAmount = boughtAmount + tokenAmountFloat;
-    const solRequired = (newBoughtAmount * newBoughtAmount - boughtAmount * boughtAmount) / PROPORTION * 1e9;
+    // Linear bonding curve: Price = a × TokensSold + b
+    // Cost = ∫[tokensSold to tokensSold + tokenAmount] (a × x + b) dx
+    // Cost = a × tokenAmount × (tokensSold + tokenAmount/2) + b × tokenAmount
+    const avgPrice = LINEAR_SLOPE * (tokensSold + tokenAmountFloat / 2) + LINEAR_INTERCEPT;
+    const solRequired = avgPrice * tokenAmountFloat * LAMPORTS_PER_SOL;
     
     return new BN(Math.round(solRequired));
   }
 
   // Calculate sell return (amount of SOL received for selling X tokens)
   calculateSellReturn(pool: LiquidityPool, tokenAmount: BN): BN {
-    const boughtAmount = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e6 / 1e9;
-    const resultAmount = pool.totalSupply.sub(pool.reserveToken).sub(tokenAmount).toNumber() / 1e6 / 1e9;
+    const tokensSold = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e9;
+    const tokenAmountFloat = tokenAmount.toNumber() / 1e9;
     
-    const solReturn = (boughtAmount * boughtAmount - resultAmount * resultAmount) / PROPORTION * 1e9;
+    // Linear bonding curve: Price = a × TokensSold + b
+    // Return = ∫[tokensSold - tokenAmount to tokensSold] (a × x + b) dx
+    // Return = a × tokenAmount × (tokensSold - tokenAmount/2) + b × tokenAmount
+    const avgPrice = LINEAR_SLOPE * (tokensSold - tokenAmountFloat / 2) + LINEAR_INTERCEPT;
+    const solReturn = avgPrice * tokenAmountFloat * LAMPORTS_PER_SOL;
     
     return new BN(Math.round(solReturn));
   }
 
   // Calculate tokens received for a given SOL amount
   calculateTokensForSol(pool: LiquidityPool, solAmount: BN): BN {
-    const boughtAmount = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e6 / 1e9;
-    const solAmountFloat = solAmount.toNumber() / 1e9;
+    const tokensSold = pool.totalSupply.sub(pool.reserveToken).toNumber() / 1e9;
+    const solAmountFloat = solAmount.toNumber() / LAMPORTS_PER_SOL;
     
-    const rootVal = Math.sqrt(PROPORTION * solAmountFloat + boughtAmount * boughtAmount);
-    const tokensOut = (rootVal - boughtAmount) * 1e6 * 1e9;
+    // Linear bonding curve: Price = a × TokensSold + b
+    // Cost = a × tokens × (tokensSold + tokens/2) + b × tokens
+    // Solving: a × tokens²/2 + (a × tokensSold + b) × tokens - solAmount = 0
+    // Using quadratic formula: tokens = (-B ± √(B² + 4AC)) / 2A
+    const A = LINEAR_SLOPE / 2;
+    const B = LINEAR_SLOPE * tokensSold + LINEAR_INTERCEPT;
+    const C = -solAmountFloat;
     
-    return new BN(Math.round(tokensOut));
+    const discriminant = B * B - 4 * A * C;
+    if (discriminant < 0) {
+      return new BN(0);
+    }
+    
+    const tokensOut = (-B + Math.sqrt(discriminant)) / (2 * A);
+    return new BN(Math.round(tokensOut * 1e9));
+  }
+
+  // Calculate platform fee for a given SOL amount
+  calculatePlatformFee(solAmount: BN): BN {
+    return solAmount.muln(PLATFORM_FEE_PERCENT).divn(100);
+  }
+
+  // Calculate net SOL amount after platform fee (for buying)
+  calculateNetSolForBuy(totalSolAmount: BN): BN {
+    const platformFee = this.calculatePlatformFee(totalSolAmount);
+    return totalSolAmount.sub(platformFee);
+  }
+
+  // Calculate net SOL received after platform fee (for selling)
+  calculateNetSolFromSell(pool: LiquidityPool, tokenAmount: BN): BN {
+    const grossSolReturn = this.calculateSellReturn(pool, tokenAmount);
+    const platformFee = this.calculatePlatformFee(grossSolReturn);
+    return grossSolReturn.sub(platformFee);
+  }
+
+  // Calculate tokens received for a given total SOL amount (including fees)
+  calculateTokensForSolWithFees(pool: LiquidityPool, totalSolAmount: BN): BN {
+    const netSolAmount = this.calculateNetSolForBuy(totalSolAmount);
+    return this.calculateTokensForSol(pool, netSolAmount);
   }
 }
 
@@ -488,6 +593,44 @@ export async function createAndInitializePool(
   console.log("Bonding curve seeded with tokens:", liquidityTx);
 
   return { poolTx, liquidityTx };
+}
+
+// Helper function to calculate and display fee information
+export function calculateFeeBreakdown(
+  sdk: BondingCurveSDK,
+  pool: LiquidityPool,
+  solAmount: BN,
+  isBuy: boolean = true
+): {
+  totalAmount: BN;
+  platformFee: BN;
+  netAmount: BN;
+  tokensExpected?: BN;
+} {
+  if (isBuy) {
+    // For buying: user pays totalAmount, fee is deducted, remaining goes to purchase
+    const platformFee = sdk.calculatePlatformFee(solAmount);
+    const netAmount = solAmount.sub(platformFee);
+    const tokensExpected = sdk.calculateTokensForSol(pool, netAmount);
+    
+    return {
+      totalAmount: solAmount,
+      platformFee,
+      netAmount,
+      tokensExpected,
+    };
+  } else {
+    // For selling: user receives netAmount after fee is deducted from grossReturn
+    const grossReturn = sdk.calculateSellReturn(pool, solAmount); // solAmount is token amount here
+    const platformFee = sdk.calculatePlatformFee(grossReturn);
+    const netAmount = grossReturn.sub(platformFee);
+    
+    return {
+      totalAmount: grossReturn,
+      platformFee,
+      netAmount,
+    };
+  }
 }
 
 // Export everything

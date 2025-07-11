@@ -2,6 +2,7 @@ import React from 'react';
 import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import type { LiquidityPool } from '../bonding-curve-sdk';
+import './PoolInfo.css';
 
 interface PoolInfoProps {
   pool: LiquidityPool;
@@ -74,91 +75,107 @@ const PoolInfo: React.FC<PoolInfoProps> = ({ pool, tokenMint }) => {
 
   try {
     return (
-      <div className="card">
-        <h2>Pool Information</h2>
-        
+      <div className="pool-info">
         <div className="pool-header">
-          <h3>Token: {tokenMint?.toString().slice(0, 8)}...</h3>
-          <div className="creator-info">
-            <span className="label">Creator:</span>
-            <span className="value">{pool.creator.toString().slice(0, 8)}...</span>
+          <div className="pool-icon">📊</div>
+          <div className="pool-title">
+            <h2>Pool Information</h2>
+            <p>Token: {tokenMint?.toString().slice(0, 8)}...{tokenMint?.toString().slice(-4)}</p>
           </div>
         </div>
 
-      <div className="pool-stats">
-        <div className="stat-row">
-          <span className="label">Total Supply:</span>
-          <span className="value">{formatNumber(safeToNumber(pool.totalSupply, "1000000000"))}</span>
+        <div className="pool-overview">
+          <div className="overview-item">
+            <span className="overview-label">Creator</span>
+            <span className="overview-value">{pool.creator.toString().slice(0, 8)}...{pool.creator.toString().slice(-4)}</span>
+          </div>
         </div>
-        
-        <div className="stat-row">
-          <span className="label">Tokens Sold:</span>
-          <span className="value">{formatNumber(safeToNumber(pool.totalSupply.sub(pool.reserveToken), "1000000000"))}</span>
-        </div>
-        
-        <div className="stat-row">
-          <span className="label">Tokens in Pool:</span>
-          <span className="value">{formatNumber(safeToNumber(pool.reserveToken, "1000000000"))}</span>
-        </div>
-        
-        <div className="stat-row">
-          <span className="label">SOL in Pool:</span>
-          <span className="value">{safeToNumber(pool.reserveSol, LAMPORTS_PER_SOL.toString()).toFixed(6)} SOL</span>
-        </div>
-        
-        <div className="stat-row">
-          <span className="label">Current Price:</span>
-          <span className="value">{(calculateCurrentPrice() / LAMPORTS_PER_SOL).toFixed(8)} SOL</span>
-        </div>
-      </div>
 
-      <div className="progress-section">
-        <div className="progress-header">
-          <span>Progress to Completion</span>
-          <span>{calculateProgress()}%</span>
+        <div className="pool-metrics">
+          <div className="metric-item">
+            <span className="metric-label">Total Supply</span>
+            <span className="metric-value">{formatNumber(safeToNumber(pool.totalSupply, "1000000000"))}</span>
+          </div>
+          
+          <div className="metric-item">
+            <span className="metric-label">Tokens Sold</span>
+            <span className="metric-value">{formatNumber(safeToNumber(pool.totalSupply.sub(pool.reserveToken), "1000000000"))}</span>
+          </div>
+          
+          <div className="metric-item">
+            <span className="metric-label">Tokens in Pool</span>
+            <span className="metric-value">{formatNumber(safeToNumber(pool.reserveToken, "1000000000"))}</span>
+          </div>
+          
+          <div className="metric-item">
+            <span className="metric-label">SOL in Pool</span>
+            <span className="metric-value">{safeToNumber(pool.reserveSol, LAMPORTS_PER_SOL.toString()).toFixed(6)} SOL</span>
+          </div>
+          
+          <div className="metric-item">
+            <span className="metric-label">Current Price</span>
+            <span className="metric-value">{(calculateCurrentPrice() / LAMPORTS_PER_SOL).toFixed(8)} SOL</span>
+          </div>
         </div>
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ width: `${calculateProgress()}%` }}
-          ></div>
-        </div>
-      </div>
 
-      <div className="pool-details">
-        <h4>Pool Details</h4>
-        <div className="detail-row">
-          <span className="label">Pool Address:</span>
-          <span className="value monospace">{pool.creator.toString()}</span>
+        <div className="progress-section">
+          <div className="progress-header">
+            <span className="progress-label">Progress to Completion</span>
+            <span className="progress-percentage">{calculateProgress()}%</span>
+          </div>
+          <div className="progress-bar">
+            <div 
+              className="progress-fill" 
+              style={{ width: `${calculateProgress()}%` }}
+            ></div>
+          </div>
+          <div className="progress-description">
+            Once 800M tokens are sold, this token graduates to a regular AMM pool
+          </div>
         </div>
-        <div className="detail-row">
-          <span className="label">Token Address:</span>
-          <span className="value monospace">{tokenMint?.toString()}</span>
-        </div>
-        <div className="detail-row">
-          <span className="label">Pool Bump:</span>
-          <span className="value">{pool.bump}</span>
-        </div>
-      </div>
 
-      <div className="bonding-curve-info">
-        <h4>Bonding Curve Formula</h4>
-        <div className="formula">
-          <code>Price = (TokensSold² / 1280) * 10⁹</code>
+        <div className="pool-details">
+          <h4>Pool Details</h4>
+          <div className="details-grid">
+            <div className="detail-item">
+              <span className="detail-label">Pool Address</span>
+              <span className="detail-value">{pool.creator.toString()}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Token Address</span>
+              <span className="detail-value">{tokenMint?.toString()}</span>
+            </div>
+            <div className="detail-item">
+              <span className="detail-label">Pool Bump</span>
+              <span className="detail-value">{pool.bump}</span>
+            </div>
+          </div>
         </div>
-        <p className="formula-description">
-          This quadratic bonding curve means token prices increase exponentially as more tokens are sold.
-        </p>
-              </div>
+
+        <div className="formula-section">
+          <h4>Bonding Curve Formula</h4>
+          <div className="formula-box">
+            <code>Price = 0.000001 × TokensSold + 0.00001</code>
+          </div>
+          <p className="formula-description">
+            This linear bonding curve means token prices increase predictably by 0.000001 SOL for each token sold.
+          </p>
+        </div>
       </div>
     );
   } catch (error) {
     console.error('Error rendering PoolInfo:', error);
     return (
-      <div className="card">
-        <h2>Pool Information</h2>
+      <div className="pool-info">
+        <div className="pool-header">
+          <div className="pool-icon">⚠️</div>
+          <div className="pool-title">
+            <h2>Pool Information</h2>
+            <p>Error loading pool information</p>
+          </div>
+        </div>
         <div className="error-message">
-          <p>Error loading pool information. Please try again.</p>
+          <p>Unable to load pool information. Please try again.</p>
         </div>
       </div>
     );

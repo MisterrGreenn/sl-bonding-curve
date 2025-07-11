@@ -3,6 +3,7 @@ import { PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { BN } from '@coral-xyz/anchor';
 import BondingCurveSDK from '../bonding-curve-sdk';
 import type { LiquidityPool } from '../bonding-curve-sdk';
+import './TradingInterface.css';
 
 interface TradingInterfaceProps {
   sdk: BondingCurveSDK | null;
@@ -98,144 +99,164 @@ const TradingInterface: React.FC<TradingInterfaceProps> = ({
     }
   };
 
-  const handleQuickAmount = (percentage: number) => {
-    if (activeTab === 'buy') {
-      // Quick buy amounts: 0.01, 0.1, 0.5, 1 SOL
-      const amounts = [0.01, 0.1, 0.5, 1.0];
-      setBuyAmount(amounts[percentage].toString());
-    } else {
-      // Quick sell amounts based on current token balance (placeholder values)
-      const amounts = [100, 1000, 10000, 100000];
-      setSellAmount(amounts[percentage].toString());
-    }
-  };
-
   try {
     return (
-      <div className="card">
-        <h2>Trading Interface</h2>
-      
-      {/* Tab Selection */}
-      <div className="tab-container">
-        <button 
-          className={`tab ${activeTab === 'buy' ? 'active' : ''}`}
-          onClick={() => setActiveTab('buy')}
-        >
-          Buy Tokens
-        </button>
-        <button 
-          className={`tab ${activeTab === 'sell' ? 'active' : ''}`}
-          onClick={() => setActiveTab('sell')}
-        >
-          Sell Tokens
-        </button>
-      </div>
-
-      {/* Buy Interface */}
-      {activeTab === 'buy' && (
-        <div className="trading-form">
-          <h3>Buy Tokens</h3>
-          
-          <div className="input-group">
-            <label>SOL Amount</label>
-            <input
-              type="number"
-              placeholder="0.0"
-              value={buyAmount}
-              onChange={(e) => setBuyAmount(e.target.value)}
-              className="input"
-              step="0.001"
-              min="0"
-            />
+      <div className="trading-interface">
+        <div className="trading-header">
+          <div className="trading-icon">💱</div>
+          <div className="trading-title">
+            <h2>Trading Interface</h2>
+            <p>Buy and sell tokens through the bonding curve</p>
           </div>
+        </div>
 
-          <div className="quick-amounts">
-            <button onClick={() => setBuyAmount('0.01')} className="btn btn-small">0.01 SOL</button>
-            <button onClick={() => setBuyAmount('0.1')} className="btn btn-small">0.1 SOL</button>
-            <button onClick={() => setBuyAmount('0.5')} className="btn btn-small">0.5 SOL</button>
-            <button onClick={() => setBuyAmount('1')} className="btn btn-small">1 SOL</button>
-          </div>
-
-          {expectedTokens && (
-            <div className="estimate">
-              <span>Expected tokens: ~{expectedTokens}</span>
-            </div>
-          )}
-
-          <button
-            onClick={handleBuy}
-            disabled={!buyAmount || isTrading}
-            className="btn btn-primary btn-large"
+        {/* Tab Selection */}
+        <div className="trading-tabs">
+          <button 
+            className={`trading-tab ${activeTab === 'buy' ? 'active' : ''}`}
+            onClick={() => setActiveTab('buy')}
           >
-            {isTrading ? 'Buying...' : 'Buy Tokens'}
+            <span className="tab-icon">📈</span>
+            Buy Tokens
+          </button>
+          <button 
+            className={`trading-tab ${activeTab === 'sell' ? 'active' : ''}`}
+            onClick={() => setActiveTab('sell')}
+          >
+            <span className="tab-icon">📉</span>
+            Sell Tokens
           </button>
         </div>
-      )}
 
-      {/* Sell Interface */}
-      {activeTab === 'sell' && (
-        <div className="trading-form">
-          <h3>Sell Tokens</h3>
-          
-          <div className="input-group">
-            <label>Token Amount</label>
-            <input
-              type="number"
-              placeholder="0"
-              value={sellAmount}
-              onChange={(e) => setSellAmount(e.target.value)}
-              className="input"
-              step="1"
-              min="0"
-            />
-          </div>
-
-          <div className="quick-amounts">
-            <button onClick={() => setSellAmount('100')} className="btn btn-small">100</button>
-            <button onClick={() => setSellAmount('1000')} className="btn btn-small">1K</button>
-            <button onClick={() => setSellAmount('10000')} className="btn btn-small">10K</button>
-            <button onClick={() => setSellAmount('100000')} className="btn btn-small">100K</button>
-          </div>
-
-          {expectedSol && (
-            <div className="estimate">
-              <span>Expected SOL: ~{expectedSol}</span>
+        {/* Buy Interface */}
+        {activeTab === 'buy' && (
+          <div className="trade-form">
+            <div className="form-section">
+              <label className="input-label">SOL Amount</label>
+              <input
+                type="number"
+                placeholder="0.0"
+                value={buyAmount}
+                onChange={(e) => setBuyAmount(e.target.value)}
+                className="trade-input"
+                step="0.001"
+                min="0"
+              />
             </div>
-          )}
 
-          <button
-            onClick={handleSell}
-            disabled={!sellAmount || isTrading}
-            className="btn btn-primary btn-large"
-          >
-            {isTrading ? 'Selling...' : 'Sell Tokens'}
-          </button>
-        </div>
-      )}
+            <div className="quick-amounts">
+              <button onClick={() => setBuyAmount('0.01')} className="quick-btn">0.01 SOL</button>
+              <button onClick={() => setBuyAmount('0.1')} className="quick-btn">0.1 SOL</button>
+              <button onClick={() => setBuyAmount('0.5')} className="quick-btn">0.5 SOL</button>
+              <button onClick={() => setBuyAmount('1')} className="quick-btn">1 SOL</button>
+            </div>
 
-      {/* Current Price Info */}
-      <div className="price-info">
-        <h4>Current Pool State</h4>
-        <div className="price-stats">
-          <div className="stat">
-            <span className="label">Tokens Sold:</span>
-            <span className="value">{pool.totalSupply.sub(pool.reserveToken).div(new BN("1000000000")).toNumber().toFixed(0)}</span>
+            {expectedTokens && (
+              <div className="estimate-box">
+                <div className="estimate-label">Expected tokens</div>
+                <div className="estimate-value">~{expectedTokens}</div>
+              </div>
+            )}
+
+            <button
+              onClick={handleBuy}
+              disabled={!buyAmount || isTrading}
+              className="trade-btn primary"
+            >
+              {isTrading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  Buying...
+                </>
+              ) : (
+                <>
+                  <span className="btn-icon">🚀</span>
+                  Buy Tokens
+                </>
+              )}
+            </button>
           </div>
-          <div className="stat">
-            <span className="label">SOL in Pool:</span>
-            <span className="value">{pool.reserveSol.div(new BN(LAMPORTS_PER_SOL)).toNumber().toFixed(4)}</span>
+        )}
+
+        {/* Sell Interface */}
+        {activeTab === 'sell' && (
+          <div className="trade-form">
+            <div className="form-section">
+              <label className="input-label">Token Amount</label>
+              <input
+                type="number"
+                placeholder="0"
+                value={sellAmount}
+                onChange={(e) => setSellAmount(e.target.value)}
+                className="trade-input"
+                step="1"
+                min="0"
+              />
+            </div>
+
+            <div className="quick-amounts">
+              <button onClick={() => setSellAmount('100')} className="quick-btn">100</button>
+              <button onClick={() => setSellAmount('1000')} className="quick-btn">1K</button>
+              <button onClick={() => setSellAmount('10000')} className="quick-btn">10K</button>
+              <button onClick={() => setSellAmount('100000')} className="quick-btn">100K</button>
+            </div>
+
+            {expectedSol && (
+              <div className="estimate-box">
+                <div className="estimate-label">Expected SOL</div>
+                <div className="estimate-value">~{expectedSol}</div>
+              </div>
+            )}
+
+            <button
+              onClick={handleSell}
+              disabled={!sellAmount || isTrading}
+              className="trade-btn secondary"
+            >
+              {isTrading ? (
+                <>
+                  <span className="btn-spinner"></span>
+                  Selling...
+                </>
+              ) : (
+                <>
+                  <span className="btn-icon">💸</span>
+                  Sell Tokens
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* Pool State */}
+        <div className="pool-state">
+          <h4>Current Pool State</h4>
+          <div className="state-grid">
+            <div className="state-item">
+              <span className="state-label">Tokens Sold</span>
+              <span className="state-value">{pool.totalSupply.sub(pool.reserveToken).div(new BN("1000000000")).toNumber().toFixed(0)}</span>
+            </div>
+            <div className="state-item">
+              <span className="state-label">SOL in Pool</span>
+              <span className="state-value">{pool.reserveSol.div(new BN(LAMPORTS_PER_SOL)).toNumber().toFixed(4)}</span>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
   } catch (error) {
     console.error('Error rendering TradingInterface:', error);
     return (
-      <div className="card">
-        <h2>Trading Interface</h2>
+      <div className="trading-interface">
+        <div className="trading-header">
+          <div className="trading-icon">⚠️</div>
+          <div className="trading-title">
+            <h2>Trading Interface</h2>
+            <p>Error loading trading interface</p>
+          </div>
+        </div>
         <div className="error-message">
-          <p>Error loading trading interface. Please try again.</p>
+          <p>Unable to load trading interface. Please try again.</p>
         </div>
       </div>
     );
